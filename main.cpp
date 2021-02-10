@@ -3,6 +3,7 @@
 #include <fstream>
 #include <unordered_map>
 #include <sstream>
+#include <math.h>
 
 
 std::unordered_map<int,int> readBucketArray(){
@@ -25,9 +26,10 @@ std::unordered_map<int,int> readBucketArray(){
    return mp;
 }
 
-int hash(int n){
-   //n num buckets
-   return 0 % n;
+int hash(int i, std::string id){
+   //hash id, mod by 2^i to determine bucket
+   int mod = pow(2, i);
+   return 0 % mod;
 }
 
 int main(int argc, char *argv[]){
@@ -57,14 +59,26 @@ int main(int argc, char *argv[]){
       emp_file.open("Employees.csv");
 
       if(emp_file.is_open()){
-	 std::unordered_map<int,int>mp(readBucketArray());
+	 //number of buckets
+	 int n = 2;
+	 int next_split = 0;
+	 int i = 1;
+
+	 //number of splits
+	 int rounds = 0;
+
 	 std::string tuple;
 	 while(std::getline(emp_file, tuple)){
+	    //When number of rounds = number of buckets, reset next bucket to split back to 0
+	    if(rounds == n){
+	       next_split = 0;
+	    }
 	    std::stringstream ss(tuple);
 	    std::string id;
 	    ss >> id;
+	    int bucket_hash_code = hash(1, id);
 
-	    std::cout << "id: " << id << std::endl;
+	    //std::cout << "id: " << id << std::endl;
 	   
 	    //get hash code using id, read out to bucket, when buckets are 80% full add bucket, use bits ??
 	 }
