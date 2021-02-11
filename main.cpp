@@ -33,6 +33,10 @@ std::unordered_map<int,int> readBucketArray(){
 }
 
 int hash(int i, std::string id){
+
+   //look up i most sig bits
+   //try to flip ith most sig bits if bucket is full
+
    //hash id, mod by 2^i to determine bucket
    int mod = pow(2, i);
    return 0 % mod;
@@ -67,6 +71,7 @@ int main(int argc, char *argv[]){
       if(emp_file.is_open()){
 	 //number of buckets
 	 int n = 2;
+	 int d = 1; //number of items per bucket, need to calculate just placeholder
 	 int next_split = 0;
 	 int i = 1;
 	 int records = 0;
@@ -77,7 +82,7 @@ int main(int argc, char *argv[]){
 	 std::string tuple;
 	 while(std::getline(emp_file, tuple)){
 	    //When average nummber of records exceeds 80% of block capacity,
-	    if((float)records/(float)n >= .80){
+	    if((float)records/(float)n * d>= .80){
 	       split(next_split, i);
 	       rounds++;
 	       next_split++;
@@ -90,7 +95,7 @@ int main(int argc, char *argv[]){
 	    std::stringstream ss(tuple);
 	    std::string id;
 	    ss >> id;
-	    int bucket_hash_code = hash(1, id);
+	    int bucket_hash_code = hash(i, id);
 
 	    //std::cout << "id: " << id << std::endl;
 	   
