@@ -6,6 +6,12 @@
 #include <math.h>
 
 
+
+void split(int next_split, int i){
+   //values in bucket that gets split gets rehashed
+}
+
+
 std::unordered_map<int,int> readBucketArray(){
    std::unordered_map<int,int>mp;
 
@@ -63,15 +69,23 @@ int main(int argc, char *argv[]){
 	 int n = 2;
 	 int next_split = 0;
 	 int i = 1;
+	 int records = 0;
 
 	 //number of splits
 	 int rounds = 0;
 
 	 std::string tuple;
 	 while(std::getline(emp_file, tuple)){
-	    //When number of rounds = number of buckets, reset next bucket to split back to 0
-	    if(rounds == n){
-	       next_split = 0;
+	    //When average nummber of records exceeds 80% of block capacity,
+	    if((float)records/(float)n >= .80){
+	       split(next_split, i);
+	       rounds++;
+	       next_split++;
+	       //When number of rounds = number of buckets, reset next bucket to split back to 0
+	       if(rounds == n){
+		  next_split = 0;
+		  i++;
+	       }
 	    }
 	    std::stringstream ss(tuple);
 	    std::string id;
