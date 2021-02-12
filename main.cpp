@@ -7,7 +7,69 @@
 #include <bitset>
 #include <functional>
 
+/***************************************
+ * *Get hash code and flip ith bit, used for when bucket is full
+ * *i: ith bit to extract upto and flip from hash value
+ * *id: employee id to used to get hash value
+ *******************************************/
+int hash(int i, std::string id){
+    std::hash<std::string> string_hash;
+    int hash_code = string_hash(id);
+    //get last i bits
+    int last_i_bits = hash_code & ((1 << i-1) - 1);
+    return last_i_bits;
+}
 
+
+/***************************************
+ * *Get hash code
+ * *i: ith bit to extract upto from hash value
+ * *id: employee id to used to get hash value
+ *******************************************/
+int hash_flip(int i, std::string id){
+    //std::cout << "i: " << i << std::endl;
+    std::hash<std::string> string_hash;
+    int hash_code = string_hash(id);
+    //get last i bits
+    int last_i_bits = hash_code & ((1 << i) - 1);
+    int flip = last_i_bits ^ (1 << i-1);
+    return last_i_bits;
+}
+
+
+/***************************************
+ * *Appends entry to bucket file if it is not full
+ * *bucket_id: hashed id of file
+ *********************************************/
+bool append_entry(int bucket_id){
+   //Try to add entry if bucket is not full
+
+
+   //return true if success, false if was full
+   return false;
+
+}
+/***************************************
+ * *Trys to append entry to 1st original hashed bucket,
+    then flipped hashed bucket, if everything if full make overflow bucket
+ * *bucket_id: hashed id of file
+ * *i: current ith bit
+ *********************************************/
+void add_entry(std::string id, int i){
+    int bucket_id = hash(i, id);
+    bool added_bucket = append_entry(bucket_id);
+    if(added_bucket == false){
+      bucket_id = hash_flip(i, id);
+   }
+   else{
+      return;
+   }
+   added_bucket = append_entry(bucket_id);
+   if(added_bucket == false){
+      //Make overflow bucket
+   }
+
+}
 /***************************************
  * *Splits bucket, rehashing values
  * *next_split: id of next bucket to split
@@ -39,35 +101,7 @@ std::unordered_map<int,int> readBucketArray(){
     }
     return mp;
 }
-/***************************************
- * *Get hash code and flip ith bit, used for when bucket is full
- * *i: ith bit to extract upto and flip from hash value
- * *id: employee id to used to get hash value
- *******************************************/
-int hash(int i, std::string id){
-    std::cout << "i: " << i << std::endl;
-    std::hash<std::string> string_hash;
-    int hash_code = string_hash(id);
-    //get last i bits
-    int last_i_bits = hash_code & ((1 << i-1) - 1);
-    return last_i_bits;
-}
 
-
-/***************************************
- * *Get hash code
- * *i: ith bit to extract upto from hash value
- * *id: employee id to used to get hash value
- *******************************************/
-int hash_flip(int i, std::string id){
-    //std::cout << "i: " << i << std::endl;
-    std::hash<std::string> string_hash;
-    int hash_code = string_hash(id);
-    //get last i bits
-    int last_i_bits = hash_code & ((1 << i) - 1);
-    int flip = last_i_bits ^ (1 << i-1);
-    return last_i_bits;
-}
 
 int main(int argc, char *argv[]){
     if(argc < 2){
