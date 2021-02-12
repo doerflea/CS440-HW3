@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <sstream>
 #include <math.h>
+#include <bitset>
+#include <functional>
 
 
 
@@ -33,7 +35,16 @@ std::unordered_map<int,int> readBucketArray(){
 }
 
 int hash(int i, std::string id){
-
+   std::cout << "i: " << i << std::endl;
+   std::hash<std::string> string_hash;
+   int hash_code = string_hash(id);
+   std::cout << "raw hash code: " << hash_code << std::endl;
+   //get last i bits
+   int last_i_bits = hash_code & ((1 << i) - 1);
+   std::cout << "ith bits: " <<  last_i_bits << std::endl;
+  
+   
+   
    //look up i most sig bits
    //try to flip ith most sig bits if bucket is full
 
@@ -70,8 +81,9 @@ int main(int argc, char *argv[]){
 
       if(emp_file.is_open()){
 	 //number of buckets
+	 int prev_n = 2;
 	 int n = 2;
-	 int d = 1; //number of items per bucket, need to calculate just placeholder
+	 int d = 4; //number of items per bucket, need to calculate just placeholder
 	 int next_split = 0;
 	 int i = 1;
 	 int records = 0;
@@ -82,20 +94,27 @@ int main(int argc, char *argv[]){
 	 std::string tuple;
 	 while(std::getline(emp_file, tuple)){
 	    //When average nummber of records exceeds 80% of block capacity,
-	    if((float)records/(float)n * d>= .80){
+	    if((float)records/(n * d) >= .80){
 	       split(next_split, i);
-	       rounds++;
+	       //increment next bucket to split pointer
 	       next_split++;
-	       //When number of rounds = number of buckets, reset next bucket to split back to 0
-	       if(rounds == n){
+	       //add bucket
+	       n++;
+	       //increment number of rounds(splits)
+	       rounds++;
+	       if(rounds == prev_n){
+		  prev_n = n;
 		  next_split = 0;
 		  i++;
 	       }
+
+
 	    }
 	    std::stringstream ss(tuple);
 	    std::string id;
 	    ss >> id;
 	    int bucket_hash_code = hash(i, id);
+	    records++;
 
 	    //std::cout << "id: " << id << std::endl;
 	   
