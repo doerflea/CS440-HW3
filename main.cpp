@@ -8,18 +8,24 @@
 #include <functional>
 
 
-
+/***************************************
+ * *Splits bucket, rehashing values
+ * *next_split: id of next bucket to split
+ *******************************************/
 void split(int next_split, int i){
    //values in bucket that gets split gets rehashed
 }
 
-
+/***************************************
+ * *Gets bucket array from file that maintains(h<key>, bucket_id>
+ *******************************************/
 std::unordered_map<int,int> readBucketArray(){
    std::unordered_map<int,int>mp;
 
-   //File with bucket array that maintains <h(key), bucket id>
+   //File with bucket array that maintains bucket_array; 
    std::ifstream bucket_array;
    bucket_array.open("bucket_array.txt");
+
    if(bucket_array.is_open()){
       //read file into mp
       std::string pair;
@@ -33,24 +39,39 @@ std::unordered_map<int,int> readBucketArray(){
    }
    return mp;
 }
-
+/***************************************
+ * *Get hash code and flip ith bit, used for when bucket is full
+ * *i: ith bit to extract upto and flip from hash value
+ * *id: employee id to used to get hash value
+ *******************************************/
 int hash(int i, std::string id){
    std::cout << "i: " << i << std::endl;
    std::hash<std::string> string_hash;
    int hash_code = string_hash(id);
-   std::cout << "raw hash code: " << hash_code << std::endl;
+   //std::cout << "raw hash code: " << hash_code << std::endl;
    //get last i bits
    int last_i_bits = hash_code & ((1 << i) - 1);
-   std::cout << "ith bits: " <<  last_i_bits << std::endl;
-  
-   
-   
-   //look up i most sig bits
-   //try to flip ith most sig bits if bucket is full
+  // std::cout << "ith bits: " <<  last_i_bits << std::endl;
+   return last_i_bits;
+}
 
-   //hash id, mod by 2^i to determine bucket
-   int mod = pow(2, i);
-   return 0 % mod;
+
+/***************************************
+ * *Get hash code
+ * *i: ith bit to extract upto from hash value
+ * *id: employee id to used to get hash value
+ *******************************************/
+int hash_flip(int i, std::string id){
+   //std::cout << "i: " << i << std::endl;
+   std::hash<std::string> string_hash;
+   int hash_code = string_hash(id);
+   //std::cout << "raw hash code: " << hash_code << std::endl;
+   //get last i bits
+   int last_i_bits = hash_code & ((1 << i) - 1);
+   int flip = last_i_bits ^ (1 << i);
+  // std::cout << "ith bits: " <<  last_i_bits << std::endl;
+  // std::cout << "flipped ith bit: " << flip << std::endl;
+   return last_i_bits;
 }
 
 int main(int argc, char *argv[]){
@@ -107,18 +128,14 @@ int main(int argc, char *argv[]){
 		  next_split = 0;
 		  i++;
 	       }
-
-
 	    }
 	    std::stringstream ss(tuple);
 	    std::string id;
 	    ss >> id;
 	    int bucket_hash_code = hash(i, id);
+	    int flip = hash_flip(i, id);
 	    records++;
 
-	    //std::cout << "id: " << id << std::endl;
-	   
-	    //get hash code using id, read out to bucket, when buckets are 80% full add bucket, use bits ??
 	 }
 
 	 emp_file.close();
