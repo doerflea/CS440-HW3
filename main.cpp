@@ -12,11 +12,12 @@
  * *i: ith bit to extract upto and flip from hash value
  * *id: employee id to used to get hash value
  *******************************************/
-int hash(int i, std::string id){
+unsigned long hash(int i, std::string id){
     std::hash<std::string> string_hash;
-    int hash_code = string_hash(id);
+    unsigned long hash_code = string_hash(id);
+    
     //get last i bits
-    int last_i_bits = hash_code & ((1 << i-1) - 1);
+    unsigned long last_i_bits = hash_code & ((1 << i) - 1);
     return last_i_bits;
 }
 
@@ -26,14 +27,16 @@ int hash(int i, std::string id){
  * *i: ith bit to extract upto from hash value
  * *id: employee id to used to get hash value
  *******************************************/
-int hash_flip(int i, std::string id){
-    //std::cout << "i: " << i << std::endl;
+unsigned long hash_flip(int i, std::string id){
     std::hash<std::string> string_hash;
-    int hash_code = string_hash(id);
+    unsigned long hash_code = string_hash(id);
+    
     //get last i bits
-    int last_i_bits = hash_code & ((1 << i) - 1);
-    int flip = last_i_bits ^ (1 << i-1);
-    return last_i_bits;
+    unsigned long last_i_bits = hash_code & ((1 << i) - 1);
+    
+    //flip ith bit
+    unsigned long flip = last_i_bits ^ (1 << (i-1));
+    return flip;
 }
 
 
@@ -41,10 +44,26 @@ int hash_flip(int i, std::string id){
  * *Appends entry to bucket file if it is not full
  * *bucket_id: hashed id of file
  *********************************************/
-bool append_entry(int bucket_id){
-   //Try to add entry if bucket is not full
-
-
+bool append_entry(unsigned long bucket_id, std::string id, std::string record, int record_size){
+    //bucket file name
+    std::string file = std::to_string(bucket_id) + ".txt";
+    std::ifstream bucket_file;
+    //Try to add entry if bucket is not full
+    bucket_file.open(file);
+    
+    if(bucket_file.is_open()){
+        //bucket exists, get bucket size, store size on first line of file
+        std::string size;
+        std::getline(bucket_file,size);
+        int n = stoi(size);
+        if(n + record_size <= 4096){
+            //append to end of file
+        }
+        bucket_file.close();
+    }
+    else{
+        //bucket not made yet as there are no entries, make bucket and add enty
+    }
    //return true if success, false if was full
    return false;
 
@@ -55,16 +74,19 @@ bool append_entry(int bucket_id){
  * *bucket_id: hashed id of file
  * *i: current ith bit
  *********************************************/
-void add_entry(std::string id, int i){
-    int bucket_id = hash(i, id);
-    bool added_bucket = append_entry(bucket_id);
+void add_entry(std::string id, int i, std::string record){
+    //size of the record
+    int size = id.length() + record.length() + 1;
+    
+    unsigned long bucket_id = hash(i, id);
+    bool added_bucket = append_entry(bucket_id, id, record, size);
     if(added_bucket == false){
       bucket_id = hash_flip(i, id);
    }
    else{
       return;
    }
-   added_bucket = append_entry(bucket_id);
+   added_bucket = append_entry(bucket_id, id, record, size);
    if(added_bucket == false){
       //Make overflow bucket
    }
@@ -159,12 +181,11 @@ int main(int argc, char *argv[]){
                     }
                 }
                 std::stringstream ss(tuple);
-                std::string id;
-                ss >> id;
-                int bucket_hash_code = hash(i, id);
-                int flip = hash_flip(i, id);
+                std::string id, record;
+                std::getline(ss, id, ',');
+                std::getline(ss, record, '\n');
+                add_entry(id, i, record);
                 records++;
-                
             }
             
             emp_file.close();
