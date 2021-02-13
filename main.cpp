@@ -7,6 +7,36 @@
 #include <bitset>
 #include <functional>
 
+/***************************************
+ * * check if bucket has overflow bucket made
+ *******************************************/
+bool check_overflow (unsigned long bucket_id){
+    std::string file = std::to_string(bucket_id) + ".txt";
+    std::ifstream bucket_file;
+    bucket_file.open(file);
+    if(bucket_file.is_open()) {
+        //Go to end of file and read until "/n"
+        bucket_file.seekg(-1, std::ios_base::end);
+        if(bucket_file.peek() == '\n'){
+            bucket_file.seekg(-1, std::ios_base::cur);
+            int i = bucket_file.tellg();
+            for(i; i > 0; i--) {
+                if(bucket_file.peek() == '\n'){
+                    //Found
+                    bucket_file.get();
+                    break;
+                }
+                bucket_file.seekg(i, std::ios_base::beg);
+            }
+        }
+        std::string lastline;
+        getline(bucket_file, lastline);
+        if(lastline[0] == 'O'){
+            return true;
+        }
+    }
+    return false;
+}
 
 /***************************************
  * * stored unordered_map to bucket array
@@ -98,6 +128,8 @@ void add_entry(std::string id, int i, std::string record, std::unordered_map<std
     
     unsigned long full_hash = 0;
     unsigned long bucket_id = hash(i, id, full_hash);
+    bool overflow_already_made = check_overflow(bucket_id);
+
     bool added_bucket = append_entry(bucket_id, id, record, size);
     if(added_bucket == false){
       bucket_id = hash_flip(i, id);
@@ -110,6 +142,12 @@ void add_entry(std::string id, int i, std::string record, std::unordered_map<std
    added_bucket = append_entry(bucket_id, id, record, size);
    if(added_bucket == false){
       //Make overflow bucket
+       std::string file_name = "O" + std::to_string(bucket_id) + ".txt";
+       std::ofstream bucket;
+       bucket.open(file_name, std::ios::app);
+       bucket << id << "," << record << "\n";
+       bucket.close();
+       mp.insert({std::to_string(full_hash), file_name});
    }
    else{
        //Sucessfully added to flipped hash
