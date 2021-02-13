@@ -83,7 +83,12 @@ void add_to_overflow(std::string id, std::string record, int record_size, std::s
         bool appended = append_entry(filename, id, record, record_size);
         if(appended){
             //sucessfully added, store to bucket array
-            mp.insert({std::to_string(full_hash), filename});
+            if(mp.find(std::to_string(full_hash)) != mp.end()){
+                mp[std::to_string(full_hash)] = filename;
+            }
+            else{
+                mp.insert({std::to_string(full_hash), filename});
+            }
         }
         //chain another overflow bucket
         else{
@@ -92,7 +97,12 @@ void add_to_overflow(std::string id, std::string record, int record_size, std::s
             bucket.open(file_name, std::ios::app);
             bucket << id << "," << record << "\n";
             bucket.close();
-            mp.insert({std::to_string(full_hash), file_name});
+            if(mp.find(std::to_string(full_hash)) != mp.end()){
+                mp[std::to_string(full_hash)] = file_name;
+            }
+            else{
+                mp.insert({std::to_string(full_hash), file_name});
+            }
         }
     }
 }
@@ -178,11 +188,22 @@ void add_entry(std::string id, int i, std::string record, std::unordered_map<std
        bucket.open(file_name, std::ios::app);
        bucket << id << "," << record << "\n";
        bucket.close();
-       mp.insert({std::to_string(full_hash), file_name});
+       if(mp.find(std::to_string(full_hash)) != mp.end()){
+           mp[std::to_string(full_hash)] = file_name;
+       }
+       else{
+           mp.insert({std::to_string(full_hash), file_name});
+       }
    }
    else{
        //Sucessfully added to flipped hash
-       mp.insert({std::to_string(full_hash), std::to_string(bucket_id)});
+       if(mp.find(std::to_string(full_hash)) != mp.end()){
+           mp[std::to_string(full_hash)] = std::to_string(bucket_id) + ".txt";
+       }
+       else{
+           mp.insert({std::to_string(full_hash), std::to_string(bucket_id) + ".txt"});
+       }
+       
    }
 
 }
