@@ -190,12 +190,29 @@ void add_entry(std::string id, int i, std::string record, std::unordered_map<std
  * *Splits bucket, rehashing values
  * *next_split: id of next bucket to split
  *******************************************/
-void split(int next_split, int i){
+void split(int next_split, int i, std::unordered_map<std::string, std::string>&mp){
     //values in bucket that gets split gets rehashed
     //If bucket is full, then next to checked flipped bit bucket
     std::streampos begin, end;
     std::string file = std::to_string(next_split) + ".txt";
     std::ifstream bucket_file;
+    
+    //rehash overflow buckets
+    while(check_overflow(file)){
+        file = "O" + file;
+        std::ifstream overflow_file;
+        overflow_file.open(file);
+        if(overflow_file.is_open()){
+            std::string tuple;
+            while(std::getline(overflow_file, tuple)){
+                std::stringstream ss(tuple);
+                std::string id, record;
+                std::getline(ss, id, ',');
+                std::getline(ss, record, '\n');
+                add_entry(id, i, record, mp);
+            }
+        }
+    }
     //Try to add entry if bucket is not full
     bucket_file.open(file, std::ios::binary);
     
@@ -304,7 +321,7 @@ int main(int argc, char *argv[]){
             while(std::getline(emp_file, tuple)){
                 //When average nummber of records exceeds 80% of block capacity,
                 if((float)records/(n * d) >= .80){
-                    split(next_split, i);
+                    split(next_split, i, mp);
                     //increment next bucket to split pointer
                     next_split++;
                     //add bucket
