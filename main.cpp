@@ -7,20 +7,32 @@
 #include <bitset>
 #include <functional>
 
+
+/***************************************
+ * * stored unordered_map to bucket array
+ *******************************************/
+void store_bucket_array(std::unordered_map<unsigned long, unsigned long>&mp){
+    std::ofstream bucket_array;
+    bucket_array.open("bucket_array.txt");
+    for(auto p : mp){
+        bucket_array << p.first << " " << p.second << "\n";
+    }
+    bucket_array.close();
+}
+    
 /***************************************
  * *Get hash code and flip ith bit, used for when bucket is full
  * *i: ith bit to extract upto and flip from hash value
  * *id: employee id to used to get hash value
  *******************************************/
-unsigned long hash(int i, std::string id){
+unsigned long hash(int i, std::string id, unsigned long &full_hash){
     std::hash<std::string> string_hash;
     unsigned long hash_code = string_hash(id);
-    
+    full_hash = hash_code;
     //get last i bits
     unsigned long last_i_bits = hash_code & ((1 << i) - 1);
     return last_i_bits;
 }
-
 
 /***************************************
  * *Get hash code
@@ -39,33 +51,37 @@ unsigned long hash_flip(int i, std::string id){
     return flip;
 }
 
-
 /***************************************
  * *Appends entry to bucket file if it is not full
  * *bucket_id: hashed id of file
  *********************************************/
 bool append_entry(unsigned long bucket_id, std::string id, std::string record, int record_size){
     //bucket file name
+    std::streampos begin, end;
     std::string file = std::to_string(bucket_id) + ".txt";
     std::ifstream bucket_file;
     //Try to add entry if bucket is not full
-    bucket_file.open(file);
+    bucket_file.open(file, std::ios::binary);
     
+    //Get size of file
     if(bucket_file.is_open()){
-        //bucket exists, get bucket size, store size on first line of file
-        std::string size;
-        std::getline(bucket_file,size);
-        int n = stoi(size);
-        if(n + record_size <= 4096){
-            //append to end of file
-        }
+        begin = bucket_file.tellg();
+        bucket_file.seekg(0, std::ios::end);
+        end = bucket_file.tellg();
+        int n = (end - begin);
         bucket_file.close();
+        //record won't fit in this bucket
+        if(n + record_size > 4096){
+            return false;
+        }
     }
-    else{
-        //bucket not made yet as there are no entries, make bucket and add enty
-    }
-   //return true if success, false if was full
-   return false;
+    //open file, or create if it does not yet exist, to append record
+    std::ofstream bucket;
+    bucket.open(file, std::ios::app);
+    bucket << id << "," << record << "\n";
+    bucket.close();
+    
+    return true;
 
 }
 /***************************************
@@ -74,21 +90,30 @@ bool append_entry(unsigned long bucket_id, std::string id, std::string record, i
  * *bucket_id: hashed id of file
  * *i: current ith bit
  *********************************************/
-void add_entry(std::string id, int i, std::string record){
+void add_entry(std::string id, int i, std::string record, std::unordered_map<unsigned long, unsigned long>&mp){
     //size of the record
-    int size = id.length() + record.length() + 1;
     
-    unsigned long bucket_id = hash(i, id);
+    //+2 for newline character and comma
+    int size = id.length() + record.length() + 2;
+    
+    unsigned long full_hash = 0;
+    unsigned long bucket_id = hash(i, id, full_hash);
     bool added_bucket = append_entry(bucket_id, id, record, size);
     if(added_bucket == false){
       bucket_id = hash_flip(i, id);
    }
    else{
+       //Sucessfully added to first hash
+       mp.insert({full_hash, bucket_id});
       return;
    }
    added_bucket = append_entry(bucket_id, id, record, size);
    if(added_bucket == false){
       //Make overflow bucket
+   }
+   else{
+       //Sucessfully added to flipped hash
+       mp.insert({full_hash, bucket_id});
    }
 
 }
@@ -98,13 +123,14 @@ void add_entry(std::string id, int i, std::string record){
  *******************************************/
 void split(int next_split, int i){
     //values in bucket that gets split gets rehashed
+    //If bucket is full, then next to checked flipped bit bucket
 }
 
 /***************************************
  * *Gets bucket array from file that maintains(h<key>, bucket_id>
  *******************************************/
-std::unordered_map<int,int> readBucketArray(){
-    std::unordered_map<int,int>mp;
+std::unordered_map<unsigned long ,unsigned long> readBucketArray(){
+    std::unordered_map<unsigned long, unsigned long>mp;
     
     //File with bucket array that maintains bucket_array;
     std::ifstream bucket_array;
@@ -133,7 +159,7 @@ int main(int argc, char *argv[]){
     //Look up mode, must include employee
     if(strcmp(argv[1],"L")  == 0 && argc == 3){
         std::cout << "lookup " << argv[2] << std::endl;
-        std::unordered_map<int,int> mp(readBucketArray());
+        std::unordered_map<unsigned long, unsigned long> mp(readBucketArray());
         if(mp.size() == 0){
             std::cout << "Employee not found" << std::endl;
         }
@@ -146,7 +172,7 @@ int main(int argc, char *argv[]){
     //Creation mode
     else if(strcmp(argv[1],"C") == 0){
         std::cout << "creation" << std::endl;
-        
+        std::unordered_map<unsigned long, unsigned long>mp;
         //File of employees (id, name, bio, manager-id)
         std::ifstream emp_file;
         emp_file.open("Employees.csv");
@@ -184,11 +210,11 @@ int main(int argc, char *argv[]){
                 std::string id, record;
                 std::getline(ss, id, ',');
                 std::getline(ss, record, '\n');
-                add_entry(id, i, record);
+                add_entry(id, i, record, mp);
                 records++;
             }
-            
             emp_file.close();
+            store_bucket_array(mp);
         }
         else{
             std::cout << "Invalid file name" << std::endl;
