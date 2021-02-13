@@ -7,13 +7,45 @@
 #include <bitset>
 #include <functional>
 
+
+/***************************************
+ * *Appends entry to bucket file if it is not full
+ * *bucket_id: hashed id of file
+ *********************************************/
+bool append_entry(std::string file_name, std::string id, std::string record, int record_size){
+    //bucket file name
+    std::streampos begin, end;
+    std::ifstream bucket_file;
+    //Try to add entry if bucket is not full
+    bucket_file.open(file_name, std::ios::binary);
+    
+    //Get size of file
+    if(bucket_file.is_open()){
+        begin = bucket_file.tellg();
+        bucket_file.seekg(0, std::ios::end);
+        end = bucket_file.tellg();
+        int n = (end - begin);
+        bucket_file.close();
+        //record won't fit in this bucket
+        if(n + record_size > 4096){
+            return false;
+        }
+    }
+    //open file, or create if it does not yet exist, to append record
+    std::ofstream bucket;
+    bucket.open(file_name, std::ios::app);
+    bucket << id << "," << record << "\n";
+    bucket.close();
+    
+    return true;
+
+}
 /***************************************
  * * check if bucket has overflow bucket made
  *******************************************/
-bool check_overflow (unsigned long bucket_id){
-    std::string file = std::to_string(bucket_id) + ".txt";
+bool check_overflow (std::string file_name){
     std::ifstream bucket_file;
-    bucket_file.open(file);
+    bucket_file.open(file_name);
     if(bucket_file.is_open()) {
         //Go to end of file and read until "/n"
         bucket_file.seekg(-1, std::ios_base::end);
@@ -36,6 +68,33 @@ bool check_overflow (unsigned long bucket_id){
         }
     }
     return false;
+}
+
+/***************************************
+ * *add to overflow bucket
+ *******************************************/
+void add_to_overflow(std::string id, std::string record, int record_size, std::string filename, std::unordered_map<std::string, std::string>&mp, long long full_hash){
+    bool overflowed = check_overflow(filename);
+    //recursively checking overflow buckets
+    if(overflowed){
+        add_to_overflow(id, record, record_size, "O" + filename, mp, full_hash);
+    }
+    else{
+        bool appended = append_entry(filename, id, record, record_size);
+        if(appended){
+            //sucessfully added, store to bucket array
+            mp.insert({std::to_string(full_hash), filename});
+        }
+        //chain another overflow bucket
+        else{
+            std::string file_name = "O" + filename;
+            std::ofstream bucket;
+            bucket.open(file_name, std::ios::app);
+            bucket << id << "," << record << "\n";
+            bucket.close();
+            mp.insert({std::to_string(full_hash), file_name});
+        }
+    }
 }
 
 /***************************************
@@ -82,39 +141,6 @@ unsigned long hash_flip(int i, std::string id){
 }
 
 /***************************************
- * *Appends entry to bucket file if it is not full
- * *bucket_id: hashed id of file
- *********************************************/
-bool append_entry(unsigned long bucket_id, std::string id, std::string record, int record_size){
-    //bucket file name
-    std::streampos begin, end;
-    std::string file = std::to_string(bucket_id) + ".txt";
-    std::ifstream bucket_file;
-    //Try to add entry if bucket is not full
-    bucket_file.open(file, std::ios::binary);
-    
-    //Get size of file
-    if(bucket_file.is_open()){
-        begin = bucket_file.tellg();
-        bucket_file.seekg(0, std::ios::end);
-        end = bucket_file.tellg();
-        int n = (end - begin);
-        bucket_file.close();
-        //record won't fit in this bucket
-        if(n + record_size > 4096){
-            return false;
-        }
-    }
-    //open file, or create if it does not yet exist, to append record
-    std::ofstream bucket;
-    bucket.open(file, std::ios::app);
-    bucket << id << "," << record << "\n";
-    bucket.close();
-    
-    return true;
-
-}
-/***************************************
  * *Trys to append entry to 1st original hashed bucket,
     then flipped hashed bucket, if everything if full make overflow bucket
  * *bucket_id: hashed id of file
@@ -128,9 +154,14 @@ void add_entry(std::string id, int i, std::string record, std::unordered_map<std
     
     unsigned long full_hash = 0;
     unsigned long bucket_id = hash(i, id, full_hash);
-    bool overflow_already_made = check_overflow(bucket_id);
+    bool overflow_already_made = check_overflow(std::to_string(bucket_id) + ".txt");
+    if(overflow_already_made){
+        std::string overflow_name = "O" + std::to_string(bucket_id) + ".txt";
+        add_to_overflow(id, record, size, overflow_name, mp, full_hash);
+        return;
+    }
+    bool added_bucket = append_entry(std::to_string(bucket_id) + ".txt", id, record, size);
 
-    bool added_bucket = append_entry(bucket_id, id, record, size);
     if(added_bucket == false){
       bucket_id = hash_flip(i, id);
    }
@@ -139,7 +170,7 @@ void add_entry(std::string id, int i, std::string record, std::unordered_map<std
        mp.insert({std::to_string(full_hash), std::to_string(bucket_id)});
        return;
    }
-   added_bucket = append_entry(bucket_id, id, record, size);
+   added_bucket = append_entry(std::to_string(bucket_id) + ".txt", id, record, size);
    if(added_bucket == false){
       //Make overflow bucket
        std::string file_name = "O" + std::to_string(bucket_id) + ".txt";
@@ -261,7 +292,7 @@ int main(int argc, char *argv[]){
             //number of buckets
             int prev_n = 2;
             int n = 2;
-            int d = 4; //number of items per bucket, need to calculate just placeholder
+            int d = 5; //max number of items per bucket
             int next_split = 0;
             int i = 1;
             int records = 0;
