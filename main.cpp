@@ -171,16 +171,21 @@ void add_entry(std::string id, int i, std::string record, std::unordered_map<std
         return;
     }
     bool added_bucket = append_entry(std::to_string(bucket_id) + ".txt", id, record, size);
-
+    unsigned long bucket_id_flip = 0;
     if(added_bucket == false){
-      bucket_id = hash_flip(i, id);
+     bucket_id_flip = hash_flip(i, id);
    }
    else{
        //Sucessfully added to first hash
-       mp.insert({std::to_string(full_hash), std::to_string(bucket_id)});
+       if(mp.find(std::to_string(full_hash)) != mp.end()){
+           mp[std::to_string(full_hash)] = std::to_string(bucket_id) + ".txt";
+       }
+       else{
+           mp.insert({std::to_string(full_hash), std::to_string(bucket_id)});
+       }
        return;
    }
-   added_bucket = append_entry(std::to_string(bucket_id) + ".txt", id, record, size);
+   added_bucket = append_entry(std::to_string(bucket_id_flip) + ".txt", id, record, size);
    if(added_bucket == false){
       //Make overflow bucket
        std::string file_name = "O" + std::to_string(bucket_id) + ".txt";
@@ -198,10 +203,10 @@ void add_entry(std::string id, int i, std::string record, std::unordered_map<std
    else{
        //Sucessfully added to flipped hash
        if(mp.find(std::to_string(full_hash)) != mp.end()){
-           mp[std::to_string(full_hash)] = std::to_string(bucket_id) + ".txt";
+           mp[std::to_string(full_hash)] = std::to_string(bucket_id_flip) + ".txt";;
        }
        else{
-           mp.insert({std::to_string(full_hash), std::to_string(bucket_id) + ".txt"});
+           mp.insert({std::to_string(full_hash), std::to_string(bucket_id_flip) + ".txt"});
        }
        
    }
