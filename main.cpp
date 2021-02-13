@@ -138,7 +138,7 @@ void split(int next_split, int i){
         int n = (end - begin);
         bucket_file.close();
         
-        //Max size of bucket file is 716, so if 4096 - record size < 716, there are possibly values in flipped bit bucket
+        //Max size of a record is 716, so if 4096 - record size < 716, there are possibly values in flipped bit bucket
         if((4096 - n) < 716){
             //check flipped bit bucket
         }
