@@ -124,6 +124,25 @@ void add_entry(std::string id, int i, std::string record, std::unordered_map<std
 void split(int next_split, int i){
     //values in bucket that gets split gets rehashed
     //If bucket is full, then next to checked flipped bit bucket
+    std::streampos begin, end;
+    std::string file = std::to_string(next_split) + ".txt";
+    std::ifstream bucket_file;
+    //Try to add entry if bucket is not full
+    bucket_file.open(file, std::ios::binary);
+    
+    //Get size of file
+    if(bucket_file.is_open()){
+        begin = bucket_file.tellg();
+        bucket_file.seekg(0, std::ios::end);
+        end = bucket_file.tellg();
+        int n = (end - begin);
+        bucket_file.close();
+        
+        //Max size of bucket file is 716, so if 4096 - record size < 716, there are possibly values in flipped bit bucket
+        if((4096 - n) < 716){
+            //check flipped bit bucket
+        }
+    }
 }
 
 /***************************************
