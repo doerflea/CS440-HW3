@@ -211,19 +211,17 @@ void split(int next_split, int i, std::unordered_map<std::string, std::string>&m
                 std::getline(ss, record, '\n');
                 add_entry(id, i, record, mp);
             }
+            overflow_file.close();
         }
     }
-    //Try to add entry if bucket is not full
-    bucket_file.open(file, std::ios::binary);
-    
     //Get size of file
+    bucket_file.open(file, std::ios::binary);
     if(bucket_file.is_open()){
         begin = bucket_file.tellg();
         bucket_file.seekg(0, std::ios::end);
         end = bucket_file.tellg();
         int n = (end - begin);
         bucket_file.close();
-        
         //Max size of a record is 716, so if 4096 - record size < 716, there are possibly values in flipped bit bucket
         if((4096 - n) < 716){
             //check flipped bit bucket
