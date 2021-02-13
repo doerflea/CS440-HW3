@@ -222,7 +222,27 @@ void split(int next_split, int i, std::unordered_map<std::string, std::string>&m
     std::streampos begin, end;
     std::string file = std::to_string(next_split) + ".txt";
     std::ifstream bucket_file;
-    
+    bucket_file.open(file);
+    //rehash entries file
+    if(bucket_file.is_open()){
+        std::string tuple;
+        while(std::getline(bucket_file, tuple)){
+            //No record name of overflow bucket
+            if(tuple[0] == 'O'){
+                break;
+            }
+            std::stringstream ss(tuple);
+            std::string id, record;
+            std::getline(ss, id, ',');
+            std::getline(ss, record, '\n');
+            add_entry(id, i, record, mp);
+        }
+        bucket_file.close();
+    }
+    else{
+        //empty
+        return;
+    }
     //rehash overflow buckets
     while(check_overflow(file)){
         file = "O" + file;
