@@ -11,7 +11,7 @@
 /***************************************
  * * stored unordered_map to bucket array
  *******************************************/
-void store_bucket_array(std::unordered_map<unsigned long, unsigned long>&mp){
+void store_bucket_array(std::unordered_map<std::string, std::string>&mp){
     std::ofstream bucket_array;
     bucket_array.open("bucket_array.txt");
     for(auto p : mp){
@@ -90,7 +90,7 @@ bool append_entry(unsigned long bucket_id, std::string id, std::string record, i
  * *bucket_id: hashed id of file
  * *i: current ith bit
  *********************************************/
-void add_entry(std::string id, int i, std::string record, std::unordered_map<unsigned long, unsigned long>&mp){
+void add_entry(std::string id, int i, std::string record, std::unordered_map<std::string, std::string>&mp){
     //size of the record
     
     //+2 for newline character and comma
@@ -104,8 +104,8 @@ void add_entry(std::string id, int i, std::string record, std::unordered_map<uns
    }
    else{
        //Sucessfully added to first hash
-       mp.insert({full_hash, bucket_id});
-      return;
+       mp.insert({std::to_string(full_hash), std::to_string(bucket_id)});
+       return;
    }
    added_bucket = append_entry(bucket_id, id, record, size);
    if(added_bucket == false){
@@ -113,7 +113,7 @@ void add_entry(std::string id, int i, std::string record, std::unordered_map<uns
    }
    else{
        //Sucessfully added to flipped hash
-       mp.insert({full_hash, bucket_id});
+       mp.insert({std::to_string(full_hash), std::to_string(bucket_id)});
    }
 
 }
@@ -129,8 +129,8 @@ void split(int next_split, int i){
 /***************************************
  * *Gets bucket array from file that maintains(h<key>, bucket_id>
  *******************************************/
-std::unordered_map<unsigned long ,unsigned long> readBucketArray(){
-    std::unordered_map<unsigned long, unsigned long>mp;
+std::unordered_map<std::string, std::string> readBucketArray(){
+    std::unordered_map<std::string, std::string>mp;
     
     //File with bucket array that maintains bucket_array;
     std::ifstream bucket_array;
@@ -143,13 +143,43 @@ std::unordered_map<unsigned long ,unsigned long> readBucketArray(){
             std::stringstream ss(pair);
             std::string key, bucket_id;
             ss >> key >> bucket_id;
-            mp[std::stoi(key)] = std::stoi(bucket_id);
+            mp.insert({key, bucket_id});
         }
         bucket_array.close();
     }
     return mp;
 }
-
+/***************************************
+ * *Look up employee
+ *********************************************/
+void look_up(std::string id){
+    std::unordered_map<std::string, std::string> mp(readBucketArray());
+    
+    std::hash<std::string> string_hash;
+    unsigned long hash_code = string_hash(id);
+    std::string key = std::to_string(hash_code);
+    //Didn't find hash of id
+    if(mp.size() == 0 || mp.find(key) == mp.end()){
+        std::cout << "Employee not found" << std::endl;
+    }
+    else{
+        std::ifstream bucket_file;
+        std::string file_name = mp[key] + ".txt";
+        bucket_file.open(file_name);
+        if(bucket_file.is_open()){
+            std::string tuple;
+            while(std::getline(bucket_file, tuple)){
+                std::stringstream ss(tuple);
+                std::string emp_id, record;
+                std::getline(ss, emp_id, ',');
+                std::getline(ss, record, '\n');
+                if(emp_id == id){
+                    std::cout << id << ": " << record << std::endl;
+                }
+            }
+        }
+    }
+}
 
 int main(int argc, char *argv[]){
     if(argc < 2){
@@ -159,20 +189,13 @@ int main(int argc, char *argv[]){
     //Look up mode, must include employee
     if(strcmp(argv[1],"L")  == 0 && argc == 3){
         std::cout << "lookup " << argv[2] << std::endl;
-        std::unordered_map<unsigned long, unsigned long> mp(readBucketArray());
-        if(mp.size() == 0){
-            std::cout << "Employee not found" << std::endl;
-        }
-        else{
-            //get hash code
-            //look up record file bucket id in mp
-        }
+        look_up(argv[2]);
         return 0;
     }
     //Creation mode
     else if(strcmp(argv[1],"C") == 0){
         std::cout << "creation" << std::endl;
-        std::unordered_map<unsigned long, unsigned long>mp;
+        std::unordered_map<std::string, std::string>mp;
         //File of employees (id, name, bio, manager-id)
         std::ifstream emp_file;
         emp_file.open("Employees.csv");
