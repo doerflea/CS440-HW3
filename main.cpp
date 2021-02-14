@@ -186,7 +186,7 @@ void add_entry(std::string id, int i, std::string record, std::unordered_map<std
            mp[std::to_string(full_hash)] = std::to_string(bucket_id) + ".txt";
        }
        else{
-           mp.insert({std::to_string(full_hash), std::to_string(bucket_id)});
+           mp.insert({std::to_string(full_hash), std::to_string(bucket_id) + ".txt"});
        }
        return;
    }
@@ -208,7 +208,7 @@ void add_entry(std::string id, int i, std::string record, std::unordered_map<std
            mp[std::to_string(full_hash)] = std::to_string(bucket_id) + ".txt";
        }
        else{
-           mp.insert({std::to_string(full_hash), std::to_string(bucket_id)});
+           mp.insert({std::to_string(full_hash), std::to_string(bucket_id) + ".txt"});
        }
        return;
    }
