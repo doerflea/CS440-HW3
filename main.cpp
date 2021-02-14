@@ -332,7 +332,7 @@ void look_up(std::string id){
 
 int main(int argc, char *argv[]){
     if(argc < 2){
-        std::cout << "Invalid arguments" << std::endl;
+        std::cout << "Error: Invalid arguments." << std::endl;
         return 0;
     }
     //Look up mode, must include employee
@@ -347,7 +347,7 @@ int main(int argc, char *argv[]){
         std::unordered_map<std::string, std::string>mp;
         //File of employees (id, name, bio, manager-id)
         std::ifstream emp_file;
-        emp_file.open("Employees.csv");
+        emp_file.open("Employee.csv");
         
         if(emp_file.is_open()){
             //number of buckets
@@ -389,11 +389,11 @@ int main(int argc, char *argv[]){
             store_bucket_array(mp);
         }
         else{
-            std::cout << "Invalid file name" << std::endl;
+            std::cout << "Error: Employee.csv does not exist." << std::endl;
         }
     }
     else{
-        std::cout << "Invalid arguments" << std::endl;
+        std::cout << "Error: Invalid arguments." << std::endl;
     }
     return 0;
 }
