@@ -6,7 +6,7 @@
 #include <math.h>
 #include <bitset>
 #include <functional>
-
+#include <stdio.h>
 
 /***************************************
  * *Appends entry to bucket file if it is not full
@@ -92,6 +92,7 @@ void add_to_overflow(std::string id, std::string record, int record_size, std::s
         }
         //chain another overflow bucket
         else{
+            std::string org_file = filename;
             std::string file_name = "O" + filename;
             std::ofstream bucket;
             bucket.open(file_name, std::ios::app);
@@ -103,6 +104,9 @@ void add_to_overflow(std::string id, std::string record, int record_size, std::s
             else{
                 mp.insert({std::to_string(full_hash), file_name});
             }
+            bucket.open(org_file, std::ios::app);
+            bucket << file_name << "\n";
+            bucket.close();
         }
     }
 }
@@ -186,13 +190,18 @@ void add_entry(std::string id, int i, std::string record, std::unordered_map<std
        }
        return;
    }
-   added_bucket = append_entry(std::to_string(bucket_id_flip) + ".txt", id, record, size);
+    added_bucket = false; //append_entry(std::to_string(bucket_id_flip) + ".txt", id, record, size);
    if(added_bucket == false){
       //Make overflow bucket
+       std::string org_file = std::to_string(bucket_id) + ".txt";
        std::string file_name = "O" + std::to_string(bucket_id) + ".txt";
        std::ofstream bucket;
        bucket.open(file_name, std::ios::app);
        bucket << id << "," << record << "\n";
+       bucket.close();
+       //add overflow bucket to orginal file
+       bucket.open(org_file, std::ios::app);
+       bucket << file_name << "\n";
        bucket.close();
        //Sucessfully added to overflow bucket
        if(mp.find(std::to_string(full_hash)) != mp.end()){
@@ -225,30 +234,19 @@ void split(int next_split, int i, std::unordered_map<std::string, std::string>&m
     std::streampos begin, end;
     std::string file = std::to_string(next_split) + ".txt";
     std::ifstream bucket_file;
-    bucket_file.open(file);
-    //rehash entries file
-    if(bucket_file.is_open()){
-        std::string tuple;
-        while(std::getline(bucket_file, tuple)){
-            //No record name of overflow bucket
-            if(tuple[0] == 'O'){
-                break;
-            }
-            std::stringstream ss(tuple);
-            std::string id, record;
-            std::getline(ss, id, ',');
-            std::getline(ss, record, '\n');
-            add_entry(id, i, record, mp);
-        }
-        bucket_file.close();
-    }
-    else{
-        //empty
-        return;
-    }
     //rehash overflow buckets
     while(check_overflow(file)){
+        std::string old_file = file;
         file = "O" + file;
+        if(old_file[0] == 'O'){
+            if (std::rename(old_file.c_str(), "temp.txt") != 0){
+                perror("Error renaming file");
+            }
+            //delete old file
+            if (remove("temp.txt") !=0){
+                std::cout << "Remove operation failed" << std::endl;
+            }
+        }
         std::ifstream overflow_file;
         overflow_file.open(file);
         if(overflow_file.is_open()){
@@ -262,6 +260,34 @@ void split(int next_split, int i, std::unordered_map<std::string, std::string>&m
             }
             overflow_file.close();
         }
+    }
+    bucket_file.open(file);
+    //rehash entries file
+    if(bucket_file.is_open()){
+        //rename file to temp.txt
+        if (std::rename(file.c_str(), "temp.txt") != 0){
+            perror("Error renaming file");
+        }
+        std::string tuple;
+        while(std::getline(bucket_file, tuple)){
+            //No record name of overflow bucket
+            if(tuple[0] == 'O'){
+                break;
+            }
+            std::stringstream ss(tuple);
+            std::string id, record;
+            std::getline(ss, id, ',');
+            std::getline(ss, record, '\n');
+            add_entry(id, i, record, mp);
+        }
+        bucket_file.close();
+        if (remove("temp.txt") !=0){
+            std::cout << "Remove operation failed" << std::endl;
+        }
+    }
+    else{
+        //empty
+        return;
     }
     //Get size of file
     bucket_file.open(file, std::ios::binary);
@@ -324,7 +350,7 @@ void look_up(std::string id){
     }
     else{
         std::ifstream bucket_file;
-        std::string file_name = mp[key];
+        std::string file_name = mp[key] + ".txt";
         bucket_file.open(file_name);
         if(bucket_file.is_open()){
             std::string tuple;
@@ -350,7 +376,7 @@ void look_up(std::string id){
                 while(std::getline(overflow_file, tuple)){
                     std::stringstream ss(tuple);
                     std::string emp_id, record;
-                    std::getline(ss, id, ',');
+                    std::getline(ss, emp_id, ',');
                     std::getline(ss, record, '\n');
                     if(emp_id == id){
                         std::cout << id << ": " << record << std::endl;
@@ -399,7 +425,7 @@ int main(int argc, char *argv[]){
             while(std::getline(emp_file, tuple)){
                 //When average nummber of records exceeds 80% of block capacity,
                 if((float)records/(n * d) >= .80){
-                    split(next_split, i, mp);
+    //                split(next_split, i, mp);
                     //increment next bucket to split pointer
                     next_split++;
                     //add bucket
