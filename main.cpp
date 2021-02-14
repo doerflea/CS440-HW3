@@ -114,10 +114,10 @@ void add_to_overflow(std::string id, std::string record, int record_size, std::s
 /***************************************
  * * stored unordered_map to bucket array
  *******************************************/
-void store_bucket_array(std::unordered_map<std::string, std::string>&mp, int n, int i){
+void store_bucket_array(std::unordered_map<std::string, std::string>&mp, int n, int i, int next_split){
     std::ofstream bucket_array;
     bucket_array.open("bucket_array.txt");
-    bucket_array << n << " " << i << "\n";
+    bucket_array << n << " " << i << " " << next_split << "\n";
     for(auto p : mp){
         bucket_array << p.first << " " << p.second << "\n";
     }
@@ -307,7 +307,7 @@ void split(int next_split, int i, std::unordered_map<std::string, std::string>&m
 /***************************************
  * *Gets bucket array from file that maintains(h<key>, bucket_id>
  *******************************************/
-std::unordered_map<std::string, std::string> readBucketArray(int &n, int &i){
+std::unordered_map<std::string, std::string> readBucketArray(int &n, int &i, int &next_split){
     std::unordered_map<std::string, std::string>mp;
     
     //File with bucket array that maintains bucket_array;
@@ -326,6 +326,9 @@ std::unordered_map<std::string, std::string> readBucketArray(int &n, int &i){
             if(!read_n_i){
                 n = stoi(key);
                 i = stoi(bucket_id);
+                std::string split;
+                ss >> split;
+                next_split = stoi(split);
                 read_n_i = true;
                 continue;
             }
@@ -339,8 +342,8 @@ std::unordered_map<std::string, std::string> readBucketArray(int &n, int &i){
  * *Look up employee
  *********************************************/
 void look_up(std::string id){
-    int n, i;
-    std::unordered_map<std::string, std::string> mp(readBucketArray(n,i));
+    int n, i, next_split;
+    std::unordered_map<std::string, std::string> mp(readBucketArray(n, i, next_split));
     std::hash<std::string> string_hash;
     unsigned long hash_code = string_hash(id);
     std::string key = std::to_string(hash_code);
@@ -350,7 +353,7 @@ void look_up(std::string id){
     }
     else{
         std::ifstream bucket_file;
-        std::string file_name = mp[key] + ".txt";
+        std::string file_name = mp[key];
         bucket_file.open(file_name);
         if(bucket_file.is_open()){
             std::string tuple;
@@ -412,11 +415,11 @@ int main(int argc, char *argv[]){
             //number of buckets
             int n = 2;
             int i = 1;
-            std::unordered_map<std::string, std::string>mp = readBucketArray(n, i);
+            int next_split = 0;
+            std::unordered_map<std::string, std::string>mp = readBucketArray(n, i, next_split);
             int prev_n = 2;
             int d = 5; //max number of items per bucket
-            int next_split = 0;
-            int records = 0;
+            int records = mp.size();
             
             //number of splits
             int rounds = 0;
@@ -435,7 +438,9 @@ int main(int argc, char *argv[]){
                     if(rounds == prev_n){
                         prev_n = n;
                         next_split = 0;
-                        i++;
+                        if((pow(2,i)-1 < n)){
+                            i++;
+                        }
                     }
                 }
                 std::stringstream ss(tuple);
@@ -446,7 +451,7 @@ int main(int argc, char *argv[]){
                 records++;
             }
             emp_file.close();
-            store_bucket_array(mp, n, i);
+            store_bucket_array(mp, n, i, next_split);
         }
         else{
             std::cout << "Error: Employee.csv does not exist." << std::endl;
