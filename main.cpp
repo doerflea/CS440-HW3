@@ -194,12 +194,14 @@ void add_entry(std::string id, int i, std::string record, std::unordered_map<std
        bucket.open(file_name, std::ios::app);
        bucket << id << "," << record << "\n";
        bucket.close();
+       //Sucessfully added to overflow bucket
        if(mp.find(std::to_string(full_hash)) != mp.end()){
-           mp[std::to_string(full_hash)] = file_name;
+           mp[std::to_string(full_hash)] = std::to_string(bucket_id) + ".txt";
        }
        else{
-           mp.insert({std::to_string(full_hash), file_name});
+           mp.insert({std::to_string(full_hash), std::to_string(bucket_id)});
        }
+       return;
    }
    else{
        //Sucessfully added to flipped hash
@@ -322,7 +324,7 @@ void look_up(std::string id){
     }
     else{
         std::ifstream bucket_file;
-        std::string file_name = mp[key] + ".txt";
+        std::string file_name = mp[key];
         bucket_file.open(file_name);
         if(bucket_file.is_open()){
             std::string tuple;
@@ -333,8 +335,31 @@ void look_up(std::string id){
                 std::getline(ss, record, '\n');
                 if(emp_id == id){
                     std::cout << id << ": " << record << std::endl;
+                    bucket_file.close();
+                    return;
                 }
             }
+        }
+        bucket_file.close();
+        while(check_overflow(file_name)){
+            file_name = "O" + file_name;
+            std::ifstream overflow_file;
+            overflow_file.open(file_name);
+            if(overflow_file.is_open()){
+                std::string tuple;
+                while(std::getline(overflow_file, tuple)){
+                    std::stringstream ss(tuple);
+                    std::string emp_id, record;
+                    std::getline(ss, id, ',');
+                    std::getline(ss, record, '\n');
+                    if(emp_id == id){
+                        std::cout << id << ": " << record << std::endl;
+                        overflow_file.close();
+                        return;
+                    }
+                }
+            }
+            overflow_file.close();
         }
     }
 }
