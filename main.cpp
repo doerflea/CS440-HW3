@@ -190,7 +190,7 @@ void add_entry(std::string id, int i, std::string record, std::unordered_map<std
        }
        return;
    }
-    added_bucket = false; //append_entry(std::to_string(bucket_id_flip) + ".txt", id, record, size);
+    added_bucket = append_entry(std::to_string(bucket_id_flip) + ".txt", id, record, size);
    if(added_bucket == false){
       //Make overflow bucket
        std::string org_file = std::to_string(bucket_id) + ".txt";
@@ -425,7 +425,7 @@ int main(int argc, char *argv[]){
             while(std::getline(emp_file, tuple)){
                 //When average nummber of records exceeds 80% of block capacity,
                 if((float)records/(n * d) >= .80){
-    //                split(next_split, i, mp);
+                    split(next_split, i, mp);
                     //increment next bucket to split pointer
                     next_split++;
                     //add bucket
